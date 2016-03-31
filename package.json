@@ -12,7 +12,7 @@
     "body-parser": "^1.15.0",
     "express": "^4.13.4",
     "lodash": "^4.7.0",
-    "pq": "0.0.3",
+    "pg": "^4.5.2",
     "sequelize": "^3.20.0"
   },
   "engines": {

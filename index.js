@@ -9,7 +9,7 @@ const Sequelize = require('sequelize');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const port = process.env.port || 3000;
+const port = process.env.PORT || 3000;
 const router = express.Router();
 const logger = (req, res, next) => {
   console.log('->', `[${req.method}]`, req.path);

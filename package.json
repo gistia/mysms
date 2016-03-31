@@ -13,7 +13,8 @@
     "express": "^4.13.4",
     "lodash": "^4.7.0",
     "pg": "^4.5.2",
-    "sequelize": "^3.20.0"
+    "sequelize": "^3.20.0",
+    "twilio": "^2.9.1"
   },
   "engines": {
     "node": "5.7.1"

@@ -47,6 +47,15 @@ router.post('/receive', (req, res, next) => {
   console.log('req.params', req.params);
   console.log('req.body', req.body);
 
+  if (process.env.SMS_FORWARD_TO) {
+    const client = require('twilio')(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
+    client.sendMessage({
+      from: process.env.SMS_FROM,
+      to: process.env.SMS_FORWARD_TO,
+      body: req.body.Body
+    });
+  }
+
   sequelize.sync().then(() => {
     return Message.create({
       from: req.body.From,

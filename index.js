@@ -25,11 +25,13 @@ const cors = (req, res, next) => {
 
 let sequelize;
 if (process.env.DATABASE_URL) {
+  const url = require('url');
+  const db_url = url.parse(process.env.DATABASE_URL);
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect:  'postgres',
     protocol: 'postgres',
-    port:     match[4],
-    host:     match[3],
+    port:     db_url.port,
+    host:     db_url.host,
     logging:  true //false
   })
 } else {

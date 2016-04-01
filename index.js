@@ -5,11 +5,12 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const Sequelize = require('sequelize');
+const moment = require('moment');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3030;
 const router = express.Router();
 const logger = (req, res, next) => {
   console.log('->', `[${req.method}]`, req.path);
@@ -67,15 +68,27 @@ router.post('/receive', (req, res, next) => {
 });
 
 router.get('/', (req, res, next) => {
-  Message.findAll().then((messages) => {
+  Message.findAll({order: [['id', 'DESC']]}).then((messages) => {
     const rows = messages.map(m => {
-      return `<tr><td>${m.from}</td><td>${m.message}</td></tr>`;
+      // const createdAt = moment(m.createdAt).format('YYYY-MM-DD hh:mm');
+      const createdAt = moment(m.createdAt).fromNow();
+      return `
+        <tr>
+          <td><code>${m.from}</code></td>
+          <td><code>${m.message}</code></td>
+          <td>${createdAt}</td>
+        </tr>
+      `;
     }).join('');
 
     const content = `
-    <table class="table">
+    <table class="table table-striped table-bordered">
       <thead>
-        <tr><th>From</th><th>Message</th></tr>
+        <tr>
+          <th>From</th>
+          <th>Message</th>
+          <th>Received</th>
+        </tr>
       </thead>
       <tbody>
         ${rows}
@@ -88,9 +101,25 @@ router.get('/', (req, res, next) => {
     <html>
       <head>
         <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-        <title>Progenity Patient Portal</title>
+        <title>MySMS - Received</title>
       </head>
-      <body>${content}</body>
+      <body>
+        <nav id="myNavbar" class="navbar navbar-default navbar-inverse" role="navigation">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <a class="navbar-brand" href="#">MySMS</a>
+            </div>
+          </div>
+        </nav>
+
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-xs-12">
+              ${content}
+            </div>
+          </div>
+        </div>
+      </body>
     </html>
     `;
 
@@ -101,5 +130,6 @@ router.get('/', (req, res, next) => {
 app.use(cors);
 app.use(logger);
 app.use('/sms', router);
+app.use('/', (req, res, next) => res.redirect('/sms'));
 app.listen(port);
 console.log('Running on port', port);

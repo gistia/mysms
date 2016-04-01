@@ -68,64 +68,102 @@ router.post('/receive', (req, res, next) => {
 });
 
 router.get('/', (req, res, next) => {
-  Message.findAll({order: [['id', 'DESC']]}).then((messages) => {
-    const rows = messages.map(m => {
-      // const createdAt = moment(m.createdAt).format('YYYY-MM-DD hh:mm');
-      const createdAt = moment(m.createdAt).fromNow();
-      return `
-        <tr>
-          <td><code>${m.from}</code></td>
-          <td><code>${m.message}</code></td>
-          <td>${createdAt}</td>
-        </tr>
+  const url = require('url');
+  const url_parts = url.parse(req.url, true);
+  const query = url_parts.query;
+  const from = query.from;
+
+  console.log('from', from)
+
+  let options = { order: [['id', 'DESC']] };
+
+  if (from) {
+    options = Object.assign({}, options, { where: { from: from } });
+  }
+
+  Message.aggregate('from', 'DISTINCT', { plain: false }).then((numbers) => {
+    return numbers;
+  })
+  .then((numbers) => {
+    const numOptions =
+      numbers
+        .map(n => `
+          <option
+            value="${n.DISTINCT}"
+            ${from === n.DISTINCT ? " selected" : ""}
+            >
+            ${n.DISTINCT}
+          </option>
+          `);
+
+    const numSelect = `
+      <select onChange="location.href = '/sms?from=' + encodeURIComponent(this.value)">
+        ${numOptions}
+      </select>
       `;
-    }).join('');
 
-    const content = `
-    <table class="table table-striped table-bordered">
-      <thead>
-        <tr>
-          <th>From</th>
-          <th>Message</th>
-          <th>Received</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-    `
+    Message.findAll(options).then((messages) => {
+      const rows = messages.map(m => {
+        // const createdAt = moment(m.createdAt).format('YYYY-MM-DD hh:mm');
+        const createdAt = moment(m.createdAt).fromNow();
+        return `
+          <tr>
+            <td><code>${m.from}</code></td>
+            <td><code>${m.message}</code></td>
+            <td>${createdAt}</td>
+          </tr>
+        `;
+      }).join('');
 
-    const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-        <title>MySMS - Received</title>
-      </head>
-      <body>
-        <nav id="myNavbar" class="navbar navbar-default navbar-inverse" role="navigation">
+      const title = from ? from : 'All phones';
+
+      const content = `
+      ${numSelect}
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>Message</th>
+            <th>Received</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+      `
+
+      const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+          <title>MySMS - Received</title>
+        </head>
+        <body>
+          <nav id="myNavbar" class="navbar navbar-default navbar-inverse" role="navigation">
+            <div class="container-fluid">
+              <div class="navbar-header">
+                <a class="navbar-brand" href="#">MySMS</a>
+              </div>
+            </div>
+          </nav>
+
           <div class="container-fluid">
-            <div class="navbar-header">
-              <a class="navbar-brand" href="#">MySMS</a>
+            <div class="row">
+              <div class="col-xs-12">
+                <center><h1>${from}</h1></center>
+
+                ${content}
+              </div>
             </div>
           </div>
-        </nav>
+        </body>
+      </html>
+      `;
 
-        <div class="container-fluid">
-          <div class="row">
-            <div class="col-xs-12">
-              <center><h1>+14243478933</h1></center>
-
-              ${content}
-            </div>
-          </div>
-        </div>
-      </body>
-    </html>
-    `;
-
-    res.send(html);
+      res.send(html);
+    });
   });
 });
 

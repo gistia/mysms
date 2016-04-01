@@ -68,12 +68,7 @@ router.post('/receive', (req, res, next) => {
 });
 
 router.get('/', (req, res, next) => {
-  const url = require('url');
-  const url_parts = url.parse(req.url, true);
-  const query = url_parts.query;
-  const from = query.from;
-
-  console.log('from', from)
+  const from = req.query.from;
 
   let options = { order: [['id', 'DESC']] };
 
@@ -87,6 +82,7 @@ router.get('/', (req, res, next) => {
   .then((numbers) => {
     const numOptions =
       numbers
+        .filter(n => n.DISTINCT != null)
         .map(n => `
           <option
             value="${n.DISTINCT}"
@@ -98,6 +94,7 @@ router.get('/', (req, res, next) => {
 
     const numSelect = `
       <select onChange="location.href = '/sms?from=' + encodeURIComponent(this.value)">
+        <option value="">All</option>
         ${numOptions}
       </select>
       `;
@@ -118,7 +115,6 @@ router.get('/', (req, res, next) => {
       const title = from ? from : 'All phones';
 
       const content = `
-      ${numSelect}
       <table class="table table-striped table-bordered">
         <thead>
           <tr>
@@ -152,7 +148,9 @@ router.get('/', (req, res, next) => {
           <div class="container-fluid">
             <div class="row">
               <div class="col-xs-12">
-                <center><h1>${from}</h1></center>
+                ${numSelect}
+
+                <center><h1>${from ? from : 'All'}</h1></center>
 
                 ${content}
               </div>

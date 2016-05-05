@@ -41,6 +41,7 @@ if (process.env.DATABASE_URL) {
 
 const Message = sequelize.define('messages', {
   from: Sequelize.STRING,
+  number: Sequelize.STRING,
   message: Sequelize.STRING
 });
 
@@ -52,7 +53,7 @@ router.post('/receive', (req, res, next) => {
     const client = require('twilio')(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
     client.sendMessage({
       from: process.env.SMS_FROM,
-      to: process.env.SMS_FORWARD_TO,
+      number: process.env.SMS_FORWARD_TO,
       body: req.body.Body
     });
   }
@@ -60,6 +61,7 @@ router.post('/receive', (req, res, next) => {
   sequelize.sync().then(() => {
     return Message.create({
       from: req.body.From,
+      number: req.body.To,
       message: req.body.Body
     });
   });
@@ -68,15 +70,15 @@ router.post('/receive', (req, res, next) => {
 });
 
 router.get('/', (req, res, next) => {
-  const from = req.query.from;
+  const number = req.query.number;
 
   let options = { order: [['id', 'DESC']] };
 
-  if (from) {
-    options = Object.assign({}, options, { where: { from: from } });
+  if (number) {
+    options = Object.assign({}, options, { where: { number } });
   }
 
-  Message.aggregate('from', 'DISTINCT', { plain: false }).then((numbers) => {
+  Message.aggregate('number', 'DISTINCT', { plain: false }).then((numbers) => {
     return numbers;
   })
   .then((numbers) => {
@@ -86,14 +88,14 @@ router.get('/', (req, res, next) => {
         .map(n => `
           <option
             value="${n.DISTINCT}"
-            ${from === n.DISTINCT ? " selected" : ""}
+            ${number === n.DISTINCT ? " selected" : ""}
             >
             ${n.DISTINCT}
           </option>
           `);
 
     const numSelect = `
-      <select onChange="location.href = '/sms?from=' + encodeURIComponent(this.value)">
+      <select onChange="location.href = '/sms?number=' + encodeURIComponent(this.value)">
         <option value="">All</option>
         ${numOptions}
       </select>
@@ -105,20 +107,20 @@ router.get('/', (req, res, next) => {
         const createdAt = moment(m.createdAt).fromNow();
         return `
           <tr>
-            <td><code>${m.from}</code></td>
+            <td><code>${m.number}</code></td>
             <td><code>${m.message}</code></td>
             <td>${createdAt}</td>
           </tr>
         `;
       }).join('');
 
-      const title = from ? from : 'All phones';
+      const title = number ? number : 'All phones';
 
       const content = `
       <table class="table table-striped table-bordered">
         <thead>
           <tr>
-            <th>From</th>
+            <th>Number</th>
             <th>Message</th>
             <th>Received</th>
           </tr>
@@ -150,7 +152,7 @@ router.get('/', (req, res, next) => {
               <div class="col-xs-12">
                 ${numSelect}
 
-                <center><h1>${from ? from : 'All'}</h1></center>
+                <center><h1>${number ? number : 'All'}</h1></center>
 
                 ${content}
               </div>
